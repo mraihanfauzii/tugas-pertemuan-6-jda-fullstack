@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Providers } from "../provider";
+import { AppProviders } from "./providers";
 import Link from "next/link";
 import HeaderNav from "@/components/HeaderNav";
 
@@ -21,7 +21,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
+        <AppProviders>
           <header className="bg-blue-600 text-white p-4 shadow-md">
             <nav className="container mx-auto flex justify-between items-center">
               <Link href="/" className="text-2xl font-bold hover:text-blue-200">
@@ -33,7 +33,7 @@ export default async function RootLayout({
           <main className="flex-grow">
             {children}
           </main>
-        </Providers>
+        </AppProviders>
       </body>
     </html>
   );

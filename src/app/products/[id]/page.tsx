@@ -6,17 +6,8 @@ import Image from "next/image";
 import { Product } from '@prisma/client';
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/use-current-user";
-
-interface CartItemDisplay {
-  id: string; // Ini adalah productId
-  cartItemId: string; // Ini adalah ID dari entri CartItem di database
-  name: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  quantity: number;
-}
-
+import { useAppDispatch } from '@/redux/hooks';
+import { addNotification } from '@/redux/features/notificationSlice';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -25,11 +16,11 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [message, setMessage] = useState<string | null>(null);
-  const [isError, setIsError] = useState(false); // Tambahkan state untuk error message
 
   const { user, isAdmin, isAuthenticated, isLoading: isLoadingUser } = useCurrentUser();
   const userId = user?.id;
+
+  const dispatch = useAppDispatch(); // Inisialisasi dispatch hook
 
   useEffect(() => {
     if (productId) {
@@ -42,8 +33,7 @@ export default function ProductDetailPage() {
             if (res.status === 404) {
               router.push("/not-found");
             } else {
-                setMessage("Failed to load product. Please try again.");
-                setIsError(true);
+                dispatch(addNotification({ message: "Failed to load product. Please try again.", type: "error" }));
             }
             return;
           }
@@ -62,7 +52,7 @@ export default function ProductDetailPage() {
       };
       fetchProduct();
     }
-  }, [productId, router]);
+  }, [productId, router, dispatch]);
 
   const handleAddToCart = async () => {
     if (!isAuthenticated || !userId) {
@@ -71,13 +61,9 @@ export default function ProductDetailPage() {
     }
 
     if (!product) { // Pastikan produk sudah terload
-        setMessage("Product data not available to add to cart.");
-        setIsError(true);
+        dispatch(addNotification({ message: "Product data not available to add to cart.", type: "error" }));
         return;
     }
-
-    setMessage(null); // Reset pesan
-    setIsError(false);
 
     try {
         const res = await fetch('/api/cart', { // <--- Panggil API cart POST
@@ -94,22 +80,14 @@ export default function ProductDetailPage() {
         const responseData = await res.json();
 
         if (res.ok && responseData.status === 'success') {
-            setMessage(`${quantity} ${product.name} added to cart!`);
-            setIsError(false);
+            dispatch(addNotification({ message: `${quantity} ${product.name} added to cart!`, type: "success" }));
             setQuantity(1); // Reset quantity setelah berhasil
         } else {
-            setMessage(responseData.message || "Failed to add product to cart.");
-            setIsError(true);
+            dispatch(addNotification({ message: responseData.message || "Failed to add product to cart.", type: "error" }));
         }
     } catch (error) {
         console.error("Error adding to cart:", error);
-        setMessage("An unexpected error occurred while adding to cart.");
-        setIsError(true);
-    } finally {
-        setTimeout(() => {
-            setMessage(null);
-            setIsError(false);
-        }, 3000);
+        dispatch(addNotification({ message: "An unexpected error occurred while adding to cart.", type: "error" }));
     }
   };
 
@@ -190,10 +168,6 @@ export default function ProductDetailPage() {
                 Add to Cart
               </button>
             </>
-          )}
-
-          {message && (
-            <p className={`mt-4 font-medium ${isError ? "text-red-600" : "text-green-600"}`}>{message}</p>
           )}
 
           <div className="mt-8">
