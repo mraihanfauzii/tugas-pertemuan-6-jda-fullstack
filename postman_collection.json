@@ -1,0 +1,321 @@
+{
+	"info": {
+		"_postman_id": "jda-fullstack-ecommerce-api",
+		"name": "Next.js E-commerce API (Final Fixed)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "[Auth Step 1] Get CSRF Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"const csrfToken = jsonData.csrfToken;",
+									"if (csrfToken) {",
+									"    pm.collectionVariables.set(\"csrfToken\", csrfToken);",
+									"    console.log(`CSRF Token berhasil disimpan: ${csrfToken}`);",
+									"} else {",
+									"    console.error(\"Gagal mendapatkan CSRF Token dari respons.\");",
+									"}",
+									"pm.test(\"Status code is 200 and CSRF token received\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.have.jsonBody(\"csrfToken\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/csrf",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"csrf"
+							]
+						},
+						"description": "Langkah pertama dan **wajib** sebelum login. Request ini mendapatkan token CSRF dari NextAuth dan menyimpannya ke dalam variabel `csrfToken` untuk digunakan pada request login."
+					},
+					"response": []
+				},
+				{
+					"name": "[Auth Step 2] User Login (Get Session Cookie)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.expect(pm.response.code).to.equal(200);",
+									"});",
+									"",
+									"// ✅ SKRIP DIPERBAIKI:",
+									"// Debugging: Cek apakah session cookie sudah ada di Cookie Jar Postman",
+									"const cookieJar = pm.cookies.jar();",
+									"const url = pm.collectionVariables.get('BASE_URL');",
+									"",
+									"// Menggunakan cookieJar.getAll() yang benar untuk mengambil semua cookie dari URL",
+									"cookieJar.getAll(url, (error, cookies) => {",
+									"    if (error) {",
+									"        console.error('Error getting cookies:', error);",
+									"        return;",
+									"    }",
+									"",
+									"    const sessionCookie = cookies.find(c => c.name.includes('next-auth.session-token'));",
+									"",
+									"    if (sessionCookie) {",
+									"        console.log('✅ Session Cookie ditemukan:', sessionCookie.name, '=', sessionCookie.value);",
+									"        pm.test(\"Session cookie is present\", function () {",
+									"            pm.expect(sessionCookie).to.not.be.undefined;",
+									"        });",
+									"    } else {",
+									"        console.log('❌ Session Cookie TIDAK ditemukan. Cek kembali kredensial atau setup NextAuth.');",
+									"        pm.test(\"Session cookie is present\", function () {",
+									"            pm.expect.fail(\"Session cookie not found in Postman's cookie jar.\");",
+									"        });",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"adminpassword\",\n    \"redirect\": false,\n    \"csrfToken\": \"{{csrfToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/auth/callback/credentials",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"callback",
+								"credentials"
+							]
+						},
+						"description": "Log in user dengan menyertakan CSRF Token. Postman akan secara otomatis menangkap session cookie dari header `Set-Cookie` setelah request ini berhasil."
+					},
+					"response": []
+				},
+				{
+					"name": "[Auth] Register New User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane.doe@example.com\",\n    \"password\": \"strongpass456\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"register"
+							]
+						},
+						"description": "Register a new user."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "[Users] Update User Profile (Self)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Admin Updated\",\n    \"email\": \"admin_updated@example.com\",\n    \"password\": \"newadminpass123\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/user",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"user"
+							]
+						},
+						"description": "Update the profile of the currently logged-in user. Requires authentication. **Pastikan tidak ada header 'Cookie' manual.** Postman Cookie Manager akan mengirim cookie sesi secara otomatis setelah login berhasil."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "[Products] Get All Products",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/products",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"products"
+							]
+						},
+						"description": "Retrieve a list of all products. Accessible to all."
+					},
+					"response": []
+				},
+				{
+					"name": "[Products] Get Product by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/products/1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"1"
+							]
+						},
+						"description": "Retrieve details of a single product by its ID. Accessible to all."
+					},
+					"response": []
+				},
+				{
+					"name": "[Products] Add New Product (Admin Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Smart Lamp\",\n    \"description\": \"Voice-controlled smart lamp with customizable colors.\",\n    \"price\": 350000,\n    \"imageUrl\": \"/images/new-lamp.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/products",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"products"
+							]
+						},
+						"description": "Add a new product. Requires Admin role. **Pastikan tidak ada header 'Cookie' manual.** Postman Cookie Manager akan mengirim cookie sesi secara otomatis setelah login berhasil."
+					},
+					"response": []
+				},
+				{
+					"name": "[Products] Update Product (Admin Only)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"price\": 380000,\n    \"description\": \"Updated description for smart lamp.\"\n}"
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/api/products/1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"1"
+							]
+						},
+						"description": "Update an existing product by ID. Requires Admin role. **Pastikan tidak ada header 'Cookie' manual.** Postman Cookie Manager akan mengirim cookie sesi secara otomatis setelah login berhasil."
+					},
+					"response": []
+				},
+				{
+					"name": "[Products] Delete Product (Admin Only)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/api/products/1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"1"
+							]
+						},
+						"description": "Delete a product by ID. Requires Admin role. **Pastikan tidak ada header 'Cookie' manual.** Postman Cookie Manager akan mengirim cookie sesi secara otomatis setelah login berhasil."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "csrfToken",
+			"value": "",
+			"type": "string",
+			"description": "Diisi secara otomatis oleh request '[Auth Step 1] Get CSRF Token'"
+		}
+	]
+}
